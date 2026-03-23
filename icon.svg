@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#000000"/>
+  <g transform="translate(100, 140)">
+    <!-- FF Logo -->
+    <rect x="0" y="0" width="60" height="60" fill="white"/>
+    <rect x="70" y="0" width="60" height="60" fill="white"/>
+    <rect x="0" y="80" width="60" height="60" fill="white"/>
+    <rect x="140" y="0" width="60" height="60" fill="white"/>
+    <rect x="210" y="0" width="60" height="60" fill="white"/>
+    <rect x="140" y="80" width="60" height="60" fill="white"/>
+    <!-- Dots -->
+    <rect x="0" y="172" width="20" height="20" fill="white"/>
+    <rect x="30" y="172" width="20" height="20" fill="white"/>
+    <rect x="60" y="172" width="20" height="20" fill="white"/>
+    <rect x="0" y="202" width="20" height="20" fill="white"/>
+    <rect x="30" y="202" width="20" height="20" fill="white"/>
+    <rect x="60" y="202" width="20" height="20" fill="white"/>
+  </g>
+</svg>
