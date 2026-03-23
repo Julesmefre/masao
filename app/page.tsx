@@ -4,13 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { heroSlides, commercialProductions, originalsProductions } from '@/lib/data';
-
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
+import { heroSlides } from '@/lib/data';
+import { useLanguage } from '@/lib/language-context';
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -18,14 +14,13 @@ export default function HomePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
+  const { t } = useLanguage();
 
-  // Initialize Lenis smooth scroll
   useEffect(() => {
     lenisRef.current = new Lenis({
-      duration: 2.0,
+      duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      wheelMultiplier: 0.6,
     });
 
     function raf(time: number) {
@@ -34,45 +29,27 @@ export default function HomePage() {
     }
     requestAnimationFrame(raf);
 
-    lenisRef.current.on('scroll', ScrollTrigger.update);
-
     return () => {
       lenisRef.current?.destroy();
     };
   }, []);
 
-  // Hero animations
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Fade in hero content
       gsap.fromTo('.hero-content',
-        { opacity: 0, y: 60 },
-        { opacity: 1, y: 0, duration: 1.5, ease: 'power3.out', delay: 0.5 }
+        { opacity: 0, y: 80 },
+        { opacity: 1, y: 0, duration: 1.6, ease: 'power3.out', delay: 0.4 }
       );
 
-      // Animate sections on scroll
-      gsap.utils.toArray<HTMLElement>('.fade-in-section').forEach((el) => {
-        gsap.fromTo(el,
-          { opacity: 0, y: 50 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 1.2,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: el,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
-            }
-          }
-        );
-      });
+      gsap.fromTo('.hero-tagline',
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', delay: 0.8 }
+      );
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [currentSlide]);
 
-  // Auto-advance slides
   useEffect(() => {
     if (!isVideoPlaying) {
       const interval = setInterval(() => {
@@ -94,15 +71,11 @@ export default function HomePage() {
   };
 
   const currentHero = heroSlides[currentSlide];
-  const featuredCommercial = commercialProductions.slice(0, 3);
-  const featuredOriginals = originalsProductions.slice(0, 2);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-black">
-      {/* Hero Section - Full Screen */}
-      <section className="relative h-screen flex items-end">
-        {/* Background Image/Video */}
-        <div className="absolute inset-0">
+      <section className="relative h-screen flex flex-col justify-end">
+        <div className="absolute inset-0 z-0">
           {isVideoPlaying && currentHero.videoUrl ? (
             <video
               ref={videoRef}
@@ -110,194 +83,115 @@ export default function HomePage() {
               className="w-full h-full object-cover"
               onEnded={handleVideoEnd}
               playsInline
+              muted
             />
           ) : (
             <Image
               src={currentHero.thumbnail}
               alt={currentHero.title}
               fill
-              className="object-cover transition-opacity duration-1000"
+              className="object-cover"
               priority
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 w-full px-6 lg:px-[100px] pb-16 hero-content">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-            {/* Title */}
-            <div>
-              <h1 className="text-[clamp(3rem,12vw,8rem)] font-bold tracking-[-0.03em] leading-[0.95] uppercase mb-4">
-                {currentHero.title}
-              </h1>
-              <div className="flex items-center gap-8 text-[11px] tracking-[0.15em] text-white/60">
-                <span>{currentHero.client}</span>
-                <span>{currentHero.year}</span>
-              </div>
+        <div className="relative z-10 px-6 lg:px-[100px] pb-12">
+          <div className="flex items-end justify-between mb-8">
+            <div className="text-[11px] tracking-[0.15em] text-white/40">
+              {String(currentSlide + 1).padStart(2, '0')} / {String(heroSlides.length).padStart(2, '0')}
             </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-6">
               {currentHero.videoUrl && !isVideoPlaying && (
                 <button
                   type="button"
                   onClick={handlePlayVideo}
-                  className="text-[11px] tracking-[0.2em] uppercase opacity-60 hover:opacity-100 transition-opacity"
+                  className="text-[11px] tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
                 >
                   Play
                 </button>
               )}
-              <div className="flex items-center gap-4">
-                {heroSlides.map((_, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-8 h-px transition-all duration-300 ${
-                      index === currentSlide ? 'bg-white' : 'bg-white/30'
-                    }`}
-                  />
-                ))}
-              </div>
+              <Link
+                href="/productions/commercial"
+                className="text-[11px] tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
+              >
+                Discover
+              </Link>
             </div>
           </div>
-        </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-6 lg:left-[100px] text-[11px] tracking-[0.15em] text-white/30">
-          Scroll
-        </div>
-      </section>
-
-      {/* Featured Commercial Work */}
-      <section className="px-6 lg:px-[100px] py-24">
-        <div className="fade-in-section mb-12">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-[clamp(2rem,6vw,4rem)] font-bold tracking-[-0.02em] uppercase">
-              Featured Work
-            </h2>
-            <Link
-              href="/productions/commercial"
-              className="text-[11px] tracking-[0.2em] uppercase opacity-50 hover:opacity-100 transition-opacity"
-            >
-              View All
-            </Link>
+          <div className="hero-content mb-12">
+            <h1 className="text-[clamp(3.5rem,15vw,12rem)] font-bold tracking-[-0.04em] leading-[0.85] uppercase mb-4">
+              {currentHero.title}
+            </h1>
+            <div className="flex items-center gap-6 text-[13px] tracking-[0.12em] text-white/60">
+              <span>{currentHero.client}</span>
+              <span className="w-1 h-1 bg-white/30 rounded-full" />
+              <span>{currentHero.year}</span>
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {featuredCommercial.map((production, index) => (
-            <Link
-              key={production.id}
-              href={`/productions/commercial/${production.slug}`}
-              className="fade-in-section group"
-              style={{ transitionDelay: `${index * 100}ms` }}
-            >
-              <div className="relative aspect-[4/5] overflow-hidden mb-4">
-                <Image
-                  src={production.thumbnail}
-                  alt={production.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
-              </div>
-              <h3 className="text-[16px] font-bold tracking-[-0.01em] uppercase mb-2 group-hover:opacity-60 transition-opacity">
-                {production.title}
-              </h3>
-              <div className="flex items-center gap-4 text-[11px] tracking-[0.1em] text-white/50">
-                <span>{production.client}</span>
-                {production.director && <span>{production.director}</span>}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Originals Section */}
-      <section className="px-6 lg:px-[100px] py-24 border-t border-white/10">
-        <div className="fade-in-section mb-12">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-[clamp(2rem,6vw,4rem)] font-bold tracking-[-0.02em] uppercase">
-              Original Productions
-            </h2>
-            <Link
-              href="/productions/originals"
-              className="text-[11px] tracking-[0.2em] uppercase opacity-50 hover:opacity-100 transition-opacity"
-            >
-              View All
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {featuredOriginals.map((production, index) => (
-            <Link
-              key={production.id}
-              href={`/productions/originals/${production.slug}`}
-              className="fade-in-section group"
-              style={{ transitionDelay: `${index * 150}ms` }}
-            >
-              <div className="relative aspect-[16/9] overflow-hidden mb-6">
-                <Image
-                  src={production.thumbnail}
-                  alt={production.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-6">
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-white/60">
-                    {production.genre}
-                  </span>
-                </div>
-              </div>
-              <h3 className="text-[clamp(1.5rem,4vw,2.5rem)] font-bold tracking-[-0.02em] uppercase mb-3 group-hover:opacity-60 transition-opacity">
-                {production.title}
-              </h3>
-              {production.description && (
-                <p className="text-[12px] leading-relaxed text-white/60 uppercase tracking-[0.03em]">
-                  {production.description}
-                </p>
-              )}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* About Teaser */}
-      <section className="px-6 lg:px-[100px] py-24 border-t border-white/10">
-        <div className="fade-in-section grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <div>
-            <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-bold tracking-[-0.02em] leading-[1.1] uppercase mb-6">
-              WE ARE A TEAM OF PASSIONATE CREATIVES ON A MISSION TO DELIVER GREAT CONTENT
-            </h2>
-            <Link
-              href="/about"
-              className="inline-block text-[11px] tracking-[0.2em] uppercase border border-white/30 px-8 py-4 hover:bg-white hover:text-black transition-all duration-300"
-            >
-              Learn More About Us
-            </Link>
-          </div>
-          <div className="relative aspect-[4/3]">
-            <Image
-              src="https://ext.same-assets.com/3590549328/1610790658.jpeg"
-              alt="Team"
-              fill
-              className="object-cover"
-            />
+          <div className="flex items-center gap-3">
+            {heroSlides.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setCurrentSlide(index)}
+                className="group"
+              >
+                <div className={`h-[2px] transition-all duration-500 ${
+                  index === currentSlide
+                    ? 'w-16 bg-white'
+                    : 'w-8 bg-white/20 group-hover:bg-white/40'
+                }`} />
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="px-6 lg:px-[100px] py-16 border-t border-white/10">
-        <Link href="/contact" className="block group">
-          <h2 className="text-[clamp(3rem,12vw,10rem)] font-bold tracking-[-0.03em] uppercase transition-opacity duration-300 group-hover:opacity-50">
-            LET'S WORK TOGETHER
+      <section className="px-6 lg:px-[100px] py-32">
+        <div className="max-w-6xl">
+          <h2 className="hero-tagline text-[clamp(2rem,5vw,4rem)] font-bold tracking-[-0.02em] leading-[1.1] uppercase mb-8">
+            Creative production, & post-production studio
           </h2>
-        </Link>
+          <p className="text-[13px] leading-relaxed text-white/50 uppercase tracking-[0.05em] max-w-3xl">
+            Fueled by Feelings
+          </p>
+        </div>
+      </section>
+
+      <section className="px-6 lg:px-[100px] pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5">
+          {[
+            { title: 'Advertisement', href: '/productions/commercial', img: 'https://ext.same-assets.com/3590549328/3551640955.jpeg' },
+            { title: 'Originals', href: '/productions/originals', img: 'https://ext.same-assets.com/3590549328/4280035452.jpeg' },
+            { title: 'Corporate', href: '/productions/corporate', img: 'https://ext.same-assets.com/3590549328/1668134854.jpeg' },
+            { title: 'Music', href: '/productions/music', img: 'https://ext.same-assets.com/3590549328/186996560.jpeg' },
+            { title: 'Studio', href: '/productions/studio', img: 'https://ext.same-assets.com/3590549328/3551640955.jpeg' },
+            { title: 'About', href: '/about', img: 'https://ext.same-assets.com/3590549328/1610790658.jpeg' },
+          ].map((item) => (
+            <Link
+              key={item.title}
+              href={item.href}
+              className="group relative aspect-[4/5] bg-black overflow-hidden"
+            >
+              <Image
+                src={item.img}
+                alt={item.title}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
+              <div className="absolute inset-0 flex items-end p-8">
+                <h3 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.02em] uppercase">
+                  {item.title}
+                </h3>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
